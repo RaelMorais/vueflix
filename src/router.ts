@@ -8,6 +8,7 @@ import initialLayout from './layouts/initial.layout.vue';
 import authLayout from './layouts/auth.layout.vue';
 import login from './views/login.vue';
 import initial from './views/initial.vue';
+import settings from './views/settings.vue';
 const routes = [
     {
         path: "/home",
@@ -22,6 +23,9 @@ const routes = [
             {
                 path: "tvshows", component: tvShows
             },
+            {
+                path: "settings", component: settings
+            }
         ],
     },
     {

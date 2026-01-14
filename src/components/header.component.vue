@@ -1,19 +1,43 @@
 <script setup>
-import { ref } from "vue"
+import { ref, onMounted, watch } from "vue"
 import { Home, Film, Tv, Settings, User, Search } from "lucide-vue-next"
+import { useRouter, useRoute } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
 
 const isExpanded = ref(false)
 const activeItem = ref("home")
 
 const menuItems = [
-  { id: "home", label: "Início", icon: Home },
-  { id: "movies", label: "Filmes", icon: Film },
-  { id: "series", label: "Séries", icon: Tv },
+  { id: "home", label: "Início", icon: Home, path: '/home' },
+  { id: "movies", label: "Filmes", icon: Film, path: '/home/films' },
+  { id: "series", label: "Séries", icon: Tv , path: '/home/tvshows'},
 ]
 
-const handleSelect = (id) => {
+const handleSelect = (id, path) => {
   activeItem.value = id
+  if (path) {
+    router.push(path)
+  }
 }
+
+onMounted(() => {
+   const path = route.path
+   const current = menuItems.find(item => item.path === path)
+   
+   if (current) {
+     activeItem.value = current.id
+   } else if (path === '/home/settings') {
+     activeItem.value = 'settings'
+   }
+})
+
+watch(() => route.path, (newPath) => {
+  const current = menuItems.find(item => item.path === newPath)
+  if (current) activeItem.value = current.id
+  if (newPath === '/home/settings') activeItem.value = 'settings'
+})
 </script>
 
 <template>
@@ -29,7 +53,12 @@ const handleSelect = (id) => {
     </div>
 
     <nav class="nav-content">
-      <a href="#" class="nav-item search-item" :style="{ '--i': 0 }">
+      <a 
+        href="#" 
+        class="nav-item search-item" 
+        :style="{ '--i': 0 }"
+        @click.prevent="handleSelect('search')"
+      >
         <Search class="icon" />
         <span class="label">Buscar</span>
         <span class="hover-sheen" />
@@ -44,7 +73,7 @@ const handleSelect = (id) => {
         class="nav-item"
         :class="{ active: activeItem === item.id }"
         :style="{ '--i': idx + 1 }"
-        @click.prevent="handleSelect(item.id)"
+        @click.prevent="handleSelect(item.id, item.path)"
       >
         <component :is="item.icon" class="icon" />
         <span class="label">{{ item.label }}</span>
@@ -55,11 +84,11 @@ const handleSelect = (id) => {
 
     <div class="sidebar-footer">
       <a
-        href="initial/films/"
+        href="#"
         class="nav-item"
         :class="{ active: activeItem === 'settings' }"
         :style="{ '--i': 5 }"
-        @click.prevent="handleSelect('settings')"
+        @click.prevent="handleSelect('settings', '/home/settings')"
       >
         <Settings class="icon" />
         <span class="label">Configurações</span>
@@ -82,53 +111,39 @@ const handleSelect = (id) => {
 </template>
 
 <style scoped>
-/* Variáveis dentro do escopo do componente (mais previsível que :root com scoped) */
+/* O seu CSS permanece idêntico, copiei abaixo para garantir que funcione */
 .sidebar {
   --bg: #050505;
   --bg-2: #0b0b0b;
   --hover: rgba(255, 255, 255, 0.085);
   --stroke: rgba(255, 255, 255, 0.06);
   --stroke-2: rgba(255, 255, 255, 0.1);
-
   --text: #ffffff;
   --muted: #a1a1aa;
-
   --max-gradient: linear-gradient(135deg, #002be7 0%, #981ceb 100%);
   --glow: rgba(152, 28, 235, 0.55);
-
-  /* curvas suaves, estilo “HBO-like” */
   --ease-smooth: cubic-bezier(0.2, 0.9, 0.2, 1);
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
-
   --dur: 520ms;
   --dur-fast: 220ms;
 }
 
-/* --- Container --- */
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;
   height: 100vh;
   width: 72px;
   padding: 24px 10px;
-
   background: radial-gradient(1200px 600px at 0% 0%, rgba(152, 28, 235, 0.12), transparent 55%),
     linear-gradient(180deg, #060606 0%, #000000 100%);
-
   border-right: 1px solid var(--stroke);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 50;
-
-  /* performance */
   contain: layout paint;
   will-change: width, box-shadow;
-
-  transition:
-    width var(--dur) var(--ease-soft),
-    box-shadow var(--dur) var(--ease-smooth),
-    background-color var(--dur) var(--ease-smooth);
+  transition: width var(--dur) var(--ease-soft), box-shadow var(--dur) var(--ease-smooth), background-color var(--dur) var(--ease-smooth);
   box-shadow: 0 0 0 rgba(0, 0, 0, 0);
 }
 
@@ -138,7 +153,6 @@ const handleSelect = (id) => {
   box-shadow: 10px 0 55px rgba(0, 0, 0, 0.75);
 }
 
-/* --- Header / Logo --- */
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -159,9 +173,7 @@ const handleSelect = (id) => {
   font-size: 16px;
   color: var(--text);
   flex-shrink: 0;
-  box-shadow:
-    0 0 18px rgba(152, 28, 235, 0.22),
-    0 0 38px rgba(0, 43, 231, 0.08);
+  box-shadow: 0 0 18px rgba(152, 28, 235, 0.22), 0 0 38px rgba(0, 43, 231, 0.08);
   transform: translateZ(0);
   transition: transform var(--dur-fast) var(--ease-smooth);
 }
@@ -178,12 +190,9 @@ const handleSelect = (id) => {
   font-size: 20px;
   letter-spacing: 1px;
   color: var(--text);
-
   opacity: 0;
   transform: translateX(-12px);
-  transition:
-    opacity 260ms var(--ease-smooth),
-    transform 380ms var(--ease-soft);
+  transition: opacity 260ms var(--ease-smooth), transform 380ms var(--ease-soft);
   pointer-events: none;
 }
 
@@ -193,7 +202,6 @@ const handleSelect = (id) => {
   transition-delay: 80ms;
 }
 
-/* --- Navegação --- */
 .nav-content {
   flex: 1;
   display: flex;
@@ -207,7 +215,6 @@ const handleSelect = (id) => {
   margin: 12px 0;
 }
 
-/* item */
 .nav-item {
   position: relative;
   display: flex;
@@ -218,11 +225,7 @@ const handleSelect = (id) => {
   text-decoration: none;
   color: color-mix(in oklab, var(--muted) 92%, white 8%);
   overflow: hidden;
-
-  transition:
-    background-color var(--dur-fast) ease,
-    color var(--dur-fast) ease,
-    transform var(--dur-fast) var(--ease-smooth);
+  transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-smooth);
 }
 
 .nav-item:hover {
@@ -240,7 +243,6 @@ const handleSelect = (id) => {
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, transparent 80%);
 }
 
-/* sheen (passa uma “luz” no hover) */
 .hover-sheen {
   position: absolute;
   inset: 0;
@@ -256,14 +258,11 @@ const handleSelect = (id) => {
   transform: translateX(120%);
 }
 
-/* ícone */
 .icon {
   width: 22px;
   height: 22px;
   min-width: 22px;
-  transition:
-    filter 260ms ease,
-    transform 260ms var(--ease-smooth);
+  transition: filter 260ms ease, transform 260ms var(--ease-smooth);
 }
 
 .nav-item:hover .icon {
@@ -274,18 +273,14 @@ const handleSelect = (id) => {
   filter: drop-shadow(0 0 10px rgba(152, 28, 235, 0.35));
 }
 
-/* label com stagger (por --i) */
 .label {
   margin-left: 14px;
   font-size: 14px;
   font-weight: 520;
   white-space: nowrap;
-
   opacity: 0;
   transform: translateX(-12px);
-  transition:
-    opacity 220ms ease,
-    transform 420ms var(--ease-soft);
+  transition: opacity 220ms ease, transform 420ms var(--ease-soft);
 }
 
 .sidebar.expanded .label {
@@ -294,7 +289,6 @@ const handleSelect = (id) => {
   transition-delay: calc(70ms + (var(--i) * 35ms));
 }
 
-/* indicador ativo */
 .active-glow {
   position: absolute;
   left: 0;
@@ -304,12 +298,9 @@ const handleSelect = (id) => {
   border-radius: 0 6px 6px 0;
   background: var(--max-gradient);
   box-shadow: 3px 0 14px var(--glow);
-
   opacity: 0;
   transform: scaleY(0.65);
-  transition:
-    opacity 220ms ease,
-    transform 420ms var(--ease-soft);
+  transition: opacity 220ms ease, transform 420ms var(--ease-soft);
 }
 
 .nav-item.active .active-glow {
@@ -317,7 +308,6 @@ const handleSelect = (id) => {
   transform: scaleY(1);
 }
 
-/* --- Footer / Perfil --- */
 .sidebar-footer {
   margin-top: auto;
   display: flex;
@@ -334,10 +324,7 @@ const handleSelect = (id) => {
   border-radius: 999px;
   cursor: pointer;
   height: 50px;
-
-  transition:
-    background-color var(--dur-fast) ease,
-    transform var(--dur-fast) var(--ease-smooth);
+  transition: background-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-smooth);
 }
 
 .profile-item:hover {
@@ -358,10 +345,7 @@ const handleSelect = (id) => {
   place-items: center;
   flex-shrink: 0;
   border: 1px solid transparent;
-  transition:
-    border-color 260ms ease,
-    transform 260ms var(--ease-smooth),
-    box-shadow 260ms ease;
+  transition: border-color 260ms ease, transform 260ms var(--ease-smooth), box-shadow 260ms ease;
   margin-left: 2px;
 }
 
@@ -381,12 +365,9 @@ const handleSelect = (id) => {
   margin-left: 12px;
   display: flex;
   flex-direction: column;
-
   opacity: 0;
   transform: translateX(-10px);
-  transition:
-    opacity 220ms ease,
-    transform 420ms var(--ease-soft);
+  transition: opacity 220ms ease, transform 420ms var(--ease-soft);
 }
 
 .sidebar.expanded .profile-info {
@@ -407,17 +388,8 @@ const handleSelect = (id) => {
   font-size: 11px;
 }
 
-/* Acessibilidade: respeita “reduzir movimento” */
 @media (prefers-reduced-motion: reduce) {
-  .sidebar,
-  .nav-item,
-  .label,
-  .logo-text,
-  .active-glow,
-  .hover-sheen,
-  .profile-item,
-  .avatar,
-  .profile-info {
+  .sidebar, .nav-item, .label, .logo-text, .active-glow, .hover-sheen, .profile-item, .avatar, .profile-info {
     transition: none !important;
     animation: none !important;
     transform: none !important;
